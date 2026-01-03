@@ -52,28 +52,29 @@
             int[][] board = game.getGame(0);
             String pos = game.getPos(0).toString();
             String[] p = pos.split(",");
-            int x = (int) Math.round(Double.parseDouble(p[0]));
-            int y = (int) Math.round(Double.parseDouble(p[1]));
+            int x = Integer.parseInt(p[0]);
+            int y = Integer.parseInt(p[1]);
             Pixel2D pacpos = new Index2D(x, y);
-            Map2D mapboard = new Map(board);
-            Map2D dis = mapboard.allDistance(pacpos, blue);
+            Map2D map_board = new Map(board);
+            Map2D dis = map_board.allDistance(pacpos, blue);
             _count++;
             GhostCL[] ghosts = game.getGhosts(0);
-            System.out.println(pos);
-            Pixel2D closestghost = closestghost(ghosts , dis);
-            Pixel2D closestEatable = isEatable(mapboard , ghosts , pacpos);
+            Pixel2D dangerous_closestghost = closestghost(ghosts , dis);
+            if (dangerous_closestghost != null){
+                if (dis.getPixel(dangerous_closestghost) != -1 && dis.getPixel(dangerous_closestghost) < 14) {
+                    return runaway(map_board, dangerous_closestghost, pacpos);
+                }
+            }
+            Pixel2D closestEatable = isEatable(map_board , ghosts , pacpos);
             if (closestEatable != null){
-                return nextmove(mapboard , closestEatable , pacpos);
+                return nextmove(map_board , closestEatable , pacpos);
             }
-            if (closestghost != null){
-                return runaway(mapboard , closestghost , pacpos);
+            Pixel2D closestGreen = closesetGreen(map_board, dis);
+            if (closestGreen != null && dis.getPixel(closestGreen) != -1 && dis.getPixel(closestGreen) <= 2 && aliveghost(ghosts)){
+                return nextmove(map_board ,closestGreen , pacpos);
             }
-            Pixel2D closestGreen = closesetGreen(mapboard, dis);
-            if (closestGreen != null && mapboard.shortestPath(pacpos , closestGreen, blue).length <= 4){
-                return nextmove(mapboard ,closestGreen , pacpos);
-            }
-            Pixel2D closestPink = closesetPink(mapboard, dis);
-            return nextmove(mapboard ,closestPink , pacpos);
+            Pixel2D closestPink = closesetPink(map_board, dis);
+            return nextmove(map_board ,closestPink , pacpos);
 
         }
 
@@ -160,22 +161,26 @@
         }
 
         public static Pixel2D closestghost(GhostCL[] ghosts , Map2D alldismap) {
-            int run = 20  ;
+            int minDistance = Integer.MAX_VALUE;
             Pixel2D ans = null;
             for (int i = 0; i < ghosts.length; i++) {
                 GhostCL current = ghosts[i];
                 String currentLocation = current.getPos(0).toString();
                 String[] g = currentLocation.split(",");
-                int x = (int) Math.round(Double.parseDouble(g[0]));
-                int y = (int) Math.round(Double.parseDouble(g[1]));
+                int x = Integer.parseInt(g[0]);
+                int y = Integer.parseInt(g[1]);
                 Pixel2D ghost = new Index2D(x, y);
-                    if (current.getStatus() != 0 && ((current.remainTimeAsEatable(0) == 0) ||((alldismap.getPixel(ghost)+1) * GameInfo.DT) > current.remainTimeAsEatable(0))) {
-                        if (alldismap.getPixel(ghost) < run && 0 <= alldismap.getPixel(ghost)) {
-                            run = alldismap.getPixel(ghost);
+                int ghostDist = alldismap.getPixel(ghost);
+                if (ghostDist != -1) {
+                    double timeToReach = (ghostDist + 5) * GameInfo.DT / 1000.0;
+                    if (current.getStatus() != 0 && ((current.remainTimeAsEatable(0) == 0) || (timeToReach  > current.remainTimeAsEatable(0)))) {
+                        if (ghostDist < minDistance) {
+                            minDistance = ghostDist;
                             ans = ghost;
                         }
                     }
                 }
+            }
 
             return ans;
             }
@@ -199,35 +204,43 @@
                 neighbor4 = new Index2D( x, y - 1);
             }
             Pixel2D [] neighbors = {neighbor1, neighbor2, neighbor3, neighbor4};
-            int max = -1 ;
+            int maxDist = 0 ;
+            int maxNeighbors = 1;
             Pixel2D ans = null;
             for (Pixel2D n : neighbors){
-                Pixel2D [] nsp = map.shortestPath(closestghost, n , blue);
-                if (nsp != null) {
-                    int count = howManyneighbors(map, n, map.isCyclic());
-                    if (count > 1) {
-                        if (nsp.length == max && map.getPixel(n) == pink) {
-                            ans = n;
-                        } else if (nsp.length > max) {
-                            max = nsp.length;
-                            ans = n;
+                if (map.isInside(n) && map.getPixel(n) != blue) {
+                    Pixel2D[] nsp = map.shortestPath(closestghost, n, blue);
+                    if (nsp != null) {
+                        int count = howManyneighbors(map, n, map.isCyclic());
+                        if (nsp.length >= maxDist || count >= maxNeighbors) {
+                            if  (count > maxNeighbors && nsp.length > 3 ){
+                                maxNeighbors = count;
+                                maxDist = nsp.length;
+                                ans = n;
+                            }
+                            else if (nsp.length > maxDist && count > 1 ) {
+                                maxNeighbors = count;
+                                maxDist = nsp.length;
+                                ans = n;
+                            }
+                            else if  (nsp.length == maxDist && count > maxNeighbors){
+                                maxNeighbors = count;
+                                maxDist = nsp.length;
+                                ans = n;
+                            }
+                             else if (nsp.length == maxDist && count == maxNeighbors && map.getPixel(n) == pink) {
+                                ans = n;
+                            }
+                            else if (maxNeighbors <= 1 && nsp.length > maxDist) {
+                                maxNeighbors = count;
+                                maxDist = nsp.length;
+                                ans = n;
+                            }
                         }
                     }
                 }
             }
-            if (ans == null) {
-                for (Pixel2D n : neighbors){
-                    Pixel2D [] nsp = map.shortestPath(closestghost, n , blue);
-                    if (nsp != null) {
-                            if (nsp.length == max && map.getPixel(n) == pink) {
-                                ans = n;
-                            } else if (nsp.length > max) {
-                                max = nsp.length;
-                                ans = n;
-                        }
-                    }
-                }
-            };
+            if (ans == null) {return randomDir();}
             return nextmove(map , ans , pos);
 
             }
@@ -235,18 +248,19 @@
         public static Pixel2D isEatable(Map2D map , GhostCL[] ghosts , Pixel2D pac) {
             Pixel2D ans = null;
             int blue = Game.getIntColor(Color.BLUE, 0);
-            int dis = 20;
+            int dis = Integer.MAX_VALUE ;
             for (int i = 0; i < ghosts.length; i++) {
                 GhostCL current = ghosts[i];
                 if (current.getStatus() != 0 && current.remainTimeAsEatable(0) > 0){
                     String currentLocation = current.getPos(0).toString();
                     String[] g = currentLocation.split(",");
-                    int x = (int) Math.round(Double.parseDouble(g[0]));
-                    int y = (int) Math.round(Double.parseDouble(g[1]));
+                    int x = Integer.parseInt(g[0]);
+                    int y = Integer.parseInt(g[1]);
                     Pixel2D currenP = new Index2D(x, y);
                     Pixel2D [] path = map.shortestPath(currenP , pac , blue);
-                    if (y != 11 && y!= 12 && path != null) {
-                        if (path.length < dis && (GameInfo.DT * (path.length + 1))  < current.remainTimeAsEatable(0)){
+                    if ((y < 11 || y >13 || x < 9 || x > 13) && path != null) {
+                        double timeToReach = (path.length + 5) * GameInfo.DT / 1000.0 ;
+                        if (path.length < dis && timeToReach < current.remainTimeAsEatable(0)){
                             dis  = path.length;
                             ans = currenP;
                         }
@@ -282,4 +296,14 @@
             return counter;
         }
 
+        public static boolean aliveghost( GhostCL[] ghosts ) {
+            for (int i = 0; i < ghosts.length; i++) {
+                GhostCL current = ghosts[i];
+                if (current.getStatus() != 0) {
+                    return true;
+                }
+            }
+            return false;
+
+        }
         }
