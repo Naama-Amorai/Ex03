@@ -297,4 +297,38 @@ public class Map implements Map2D {
         }
         return ans;
     }
+
+
+    public boolean sameDimensions(Map2D p) {
+        if (p == null) {
+            return false;
+        }
+        if (this._map.length != p.getWidth() || this._map[0].length != p.getHeight()) {
+            return false;
+        }
+        return true;
+    }
+    public void addMap2D(Map2D p) {
+        if (p == null) {
+            throw new RuntimeException();
+        }
+        if (!this.sameDimensions(p)) {
+            throw new RuntimeException();
+        }
+        for (int i = 0; i < _map.length; i++) {
+            for (int j = 0; j < _map[0].length; j++) {
+                this._map[i][j] += p.getPixel(i, j);
+            }
+        }
+    }
+
+
+    public void printMap() {
+        for (int y = 0; y < this.getHeight(); y++) {
+            for (int x = 0; x < this.getWidth(); x++) {
+                System.out.print(this.getPixel(x, y) + "\t");
+            }
+            System.out.println();
+        }
+    }
 	}
