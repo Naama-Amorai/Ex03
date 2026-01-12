@@ -67,19 +67,33 @@ public class Ex3Algo implements PacManAlgo {
             System.out.println("pacman:" + pacman.toString() + "closest ghost:" + closestEatable.toString() );
             return nextmove(map_board, closestEatable, pacman);
         }
-        if (dangerous_ghost.getPixel(pacman) != 1000) {
-            System.out.println("runnnnn");
-            return runaway(map_board, dangerous_ghost, ghosts, pacman);
-        }
         Map2D tempMap = new Map(map_board.getMap());
         Map2D mapForEating = markghost(tempMap, ghosts);
         Map2D safeDist = mapForEating.allDistance(pacman, blue);
         Pixel2D closestGreen = closesetGreen(map_board, safeDist);
-       if (closestGreen != null && map_board.shortestPath(pacman, closestGreen, blue).length <= 5 && aliveghost(ghosts)) {
-            System.out.println("go to green");
-            System.out.println("pacman:" + pacman.toString() + "closest green:" + closestGreen.toString() );
-            return nextmove(map_board, closestGreen, pacman);
+        int distToGhost = dangerous_ghost.getPixel(pacman);
+        if (distToGhost <= whenrun()) {
+//            if (closestGreen != null) {
+//                int distToGreen = safeDist.getPixel(closestGreen);
+//                //Pixel2D[] path = map_board.shortestPath(pacman, closestGreen, blue);
+//                if (distToGreen != -1 && distToGreen <= 4) {
+//                    System.out.println("go to green");
+//                    System.out.println("pacman:" + pacman.toString() + "closest green:" + closestGreen.toString());
+//                    return nextmove(mapForEating, closestGreen, pacman);
+//                }
+//            }
+            return runaway(map_board, dangerous_ghost, ghosts, pacman);
         }
+        if (closestGreen != null) {
+            int distToGreen = safeDist.getPixel(closestGreen);
+            //Pixel2D[] path = map_board.shortestPath(pacman, closestGreen, blue);
+            if (distToGreen != -1 && distToGreen <= 6 && alive_noteatable(ghosts)) {
+                System.out.println("go to green");
+                System.out.println("pacman:" + pacman.toString() + "closest green:" + closestGreen.toString());
+                return nextmove(mapForEating, closestGreen, pacman);
+            }
+        }
+
         Pixel2D closestPink = closesetPink(map_board, safeDist);
         return nextmove(map_board, closestPink, pacman);
     }
@@ -121,64 +135,62 @@ public class Ex3Algo implements PacManAlgo {
         return ans;
     }
 
-//    public static Map closestghosts(Map2D map , GhostCL[] ghosts, Map2D alldismap) {
-//        int maxDistance = 10;
-//        int blue = Game.getIntColor(Color.BLUE, 0);
-//        Map ans = new Map(alldismap.getWidth() , alldismap.getHeight() , 0);
-//        for (int i = 0; i < ghosts.length; i++) {
-//            GhostCL current = ghosts[i];
-//            String currentLocation = current.getPos(0).toString();
-//            Pixel2D ghost = getghostPixel(currentLocation);
-//            int ghostDist = alldismap.getPixel(ghost);
-//            if (ghostDist != -1 && !isInCage(ghost)) {
-//                double timeToReach = (ghostDist) * GameInfo.DT / 1000.0 ;
-//                if (current.getStatus() != 0 && ((current.remainTimeAsEatable(0) < 0.6) || (timeToReach < (current.remainTimeAsEatable(0))))){
-//                    if (ghostDist < maxDistance) {
-//                        Map2D ghost_dist = map.allDistance(ghost, blue);
-//                        ans.addMap2D(ghost_dist);
-//                    }
-//                }
-//            }
-//        }
-//        return ans;
-//    }
-
     public static Map closestghosts(Map2D map , GhostCL[] ghosts, Map2D alldismap) {
         int maxDistance = 10;
         int blue = Game.getIntColor(Color.BLUE, 0);
-        Map ans = new Map(alldismap.getWidth() , alldismap.getHeight() , 1000);
-        for (int x = 0; x < map.getWidth(); x++) {
-            for (int y = 0; y < map.getHeight(); y++) {
-                if (map.getPixel(x, y) == blue) {
-                    ans.setPixel(x, y, -1);
-                }
-            }
-        }
-        for (GhostCL current : ghosts) {
+        Map ans = new Map(alldismap.getWidth() , alldismap.getHeight() , 0);
+        for (int i = 0; i < ghosts.length; i++) {
+            GhostCL current = ghosts[i];
             String currentLocation = current.getPos(0).toString();
             Pixel2D ghost = getghostPixel(currentLocation);
             int ghostDist = alldismap.getPixel(ghost);
             if (ghostDist != -1 && !isInCage(ghost)) {
-                double timeToReach = (ghostDist + 2) * GameInfo.DT / 1000.0;
-                if (current.getStatus() != 0 && ((current.remainTimeAsEatable(0) < timeToReach) )) {
+                double timeToReach = (ghostDist) * GameInfo.DT / 1000.0 ;
+                if (current.getStatus() != 0 && ((current.remainTimeAsEatable(0) < 0.6) || (timeToReach < (current.remainTimeAsEatable(0))))){
                     if (ghostDist < maxDistance) {
                         Map2D ghost_dist = map.allDistance(ghost, blue);
-                        for (int x = 0; x < map.getWidth(); x++) {
-                            for (int y = 0; y < map.getHeight(); y++) {
-                                int d = ghost_dist.getPixel(x, y);
-                                int currentVal = ans.getPixel(x, y);
-                                if (currentVal != -1 && d != -1 && d < currentVal) {
-                                    ans.setPixel(x, y, d);
-                                }
-                            }
-                        }
-
+                        ans.addMap2D(ghost_dist);
                     }
                 }
             }
         }
         return ans;
     }
+
+//    public static Map closestghosts(Map2D map , GhostCL[] ghosts, Map2D alldismap) {
+//      //  int maxDistance = 1000;
+//        int blue = Game.getIntColor(Color.BLUE, 0);
+//        Map ans = new Map(alldismap.getWidth() , alldismap.getHeight() , 1000);
+//        for (int x = 0; x < map.getWidth(); x++) {
+//            for (int y = 0; y < map.getHeight(); y++) {
+//                if (map.getPixel(x, y) == blue) {
+//                    ans.setPixel(x, y, -1);
+//                }
+//            }
+//        }
+//        for (GhostCL current : ghosts) {
+//            String currentLocation = current.getPos(0).toString();
+//            Pixel2D ghost = getghostPixel(currentLocation);
+//            int ghostDist = alldismap.getPixel(ghost);
+//            if (ghostDist != -1 && !isInCage(ghost)) {
+//                double timeToReach = (ghostDist + 2) * GameInfo.DT / 1000.0;
+//                if (current.getStatus() != 0 && ((current.remainTimeAsEatable(0) < timeToReach) )) {
+//                        Map2D ghost_dist = map.allDistance(ghost, blue);
+//                        for (int x = 0; x < map.getWidth(); x++) {
+//                            for (int y = 0; y < map.getHeight(); y++) {
+//                                int d = ghost_dist.getPixel(x, y);
+//                                int currentVal = ans.getPixel(x, y);
+//                                if (currentVal != -1 && d != -1 && d < currentVal) {
+//                                    ans.setPixel(x, y, d);
+//                                }
+//                            }
+//                        }
+//
+//                }
+//            }
+//        }
+//        return ans;
+//    }
 
 //    public static Map closestghosts(Map2D map , GhostCL[] ghosts, Map2D alldismap) {
 //        int maxDistance = 10;
@@ -220,6 +232,9 @@ public class Ex3Algo implements PacManAlgo {
     public static int nextmove(Map2D map, Pixel2D closets, Pixel2D pos) {
         int[] dirs = {Game.UP, Game.LEFT, Game.DOWN, Game.RIGHT};
         int blue = Game.getIntColor(Color.BLUE, 0);
+        if (closets == null) {
+            return randomDir();
+        }
         Pixel2D[] path = map.shortestPath(pos, closets, blue);
         if (path == null || path.length < 2) {
             return randomDir();
@@ -240,208 +255,163 @@ public class Ex3Algo implements PacManAlgo {
         return randomDir();
     }
 
-            public static int runaway(Map2D map, Map closestghosts , GhostCL[] ghosts , Pixel2D pos) {
-            int blue = Game.getIntColor(Color.BLUE, 0);
-            int pink = Game.getIntColor(Color.PINK, 0);
-            int green = Game.getIntColor(Color.GREEN, 0);
-            int x = pos.getX();
-            int y = pos.getY();
-            Map2D newmap = new Map(map.getMap());
-            newmap = markghost(newmap , ghosts);
-            Map2D safeDistMap = newmap.allDistance(pos, blue);
-                Pixel2D neighbor1, neighbor2, neighbor3, neighbor4;
-                if (map.isCyclic()) {
-                    neighbor1 = new Index2D((x + 1) % map.getWidth(), y);
-                    neighbor2 = new Index2D((x - 1 + map.getWidth()) % map.getWidth(), y);
-                    neighbor3 = new Index2D(x, (y + 1) % map.getHeight());
-                    neighbor4 = new Index2D(x, (y - 1 + map.getHeight()) % map.getHeight());
-                } else {
-                    neighbor1 = new Index2D(x + 1, y);
-                    neighbor2 = new Index2D(x - 1, y);
-                    neighbor3 = new Index2D(x, y + 1);
-                    neighbor4 = new Index2D(x, y - 1);
-                }
-                Pixel2D[] neighbors = {neighbor1, neighbor2, neighbor3, neighbor4};
-                Pixel2D ans = null;
-                Pixel2D closesTogreenToP = closesetGreen(map ,safeDistMap);
-                if (closesTogreenToP != null ) {
-                    Pixel2D[] path = newmap.shortestPath(pos, closesTogreenToP, blue);
-                    if (path != null && path.length > 1) {
-                        Pixel2D pathToGreen = path[1];
-                        if (closestghosts.getPixel(pathToGreen) > 3) {
-                            System.out.println("run from ghost to green");
-                            System.out.println("pacman:" + pos.toString() + "closest green:" + closestghosts.getPixel(closesTogreenToP));
-                            return nextmove(newmap, closesTogreenToP, pos);
-                        }
-                    }
-                }
+//            public static int runaway(Map2D map, Map closestghosts , GhostCL[] ghosts , Pixel2D pos) {
+//            int blue = Game.getIntColor(Color.BLUE, 0);
+//            int pink = Game.getIntColor(Color.PINK, 0);
+//            int green = Game.getIntColor(Color.GREEN, 0);
+//            int x = pos.getX();
+//            int y = pos.getY();
+//            Map2D newmap = new Map(map.getMap());
+//            newmap = markghost(newmap , ghosts);
+//            Map2D safeDistMap = newmap.allDistance(pos, blue);
+//                Pixel2D neighbor1, neighbor2, neighbor3, neighbor4;
+//                if (map.isCyclic()) {
+//                    neighbor1 = new Index2D((x + 1) % map.getWidth(), y);
+//                    neighbor2 = new Index2D((x - 1 + map.getWidth()) % map.getWidth(), y);
+//                    neighbor3 = new Index2D(x, (y + 1) % map.getHeight());
+//                    neighbor4 = new Index2D(x, (y - 1 + map.getHeight()) % map.getHeight());
+//                } else {
+//                    neighbor1 = new Index2D(x + 1, y);
+//                    neighbor2 = new Index2D(x - 1, y);
+//                    neighbor3 = new Index2D(x, y + 1);
+//                    neighbor4 = new Index2D(x, y - 1);
+//                }
+//                Pixel2D[] neighbors = {neighbor1, neighbor2, neighbor3, neighbor4};
+//                Pixel2D ans = null;
+//                Pixel2D closesTogreenToP = closesetGreen(map ,safeDistMap);
+//                if (closesTogreenToP != null ) {
+//                    Pixel2D[] path = newmap.shortestPath(pos, closesTogreenToP, blue);
+//                    if (path != null && path.length > 1) {
+//                        Pixel2D pathToGreen = path[1];
+//                        if (closestghosts.getPixel(pathToGreen) > 3) {
+//                            System.out.println("run from ghost to green");
+//                            System.out.println("pacman:" + pos.toString() + "closest green:" + closestghosts.getPixel(closesTogreenToP));
+//                            return nextmove(newmap, closesTogreenToP, pos);
+//                        }
+//                    }
+//                }
+//
+//                int maxDist = -1;
+//                int numneighbors = 1;
+//                for (Pixel2D n : neighbors) {
+//                        if (map.isInside(n) && newmap.getPixel(n) != blue && closestghosts.getPixel(n) != 0 && !isInCage(n)) {
+//                            int count = howManyneighbors(map, n, map.isCyclic());
+//                                int nToghost = closestghosts.getPixel(n);
+//                                if (nToghost >= 2) {
+//                                    if (maxDist <= 4) {
+//                                        if (nToghost > maxDist) {
+//                                            maxDist = nToghost;
+//                                            numneighbors = count;
+//                                            ans = n;
+//                                        }
+//                                        else if (nToghost == maxDist && count > numneighbors) {
+//                                            numneighbors = count;
+//                                            ans = n;
+//                                        }
+//                                    }
+//                                    else {
+//                                        if (nToghost > 4) {
+//                                            if (count > numneighbors) {
+//                                                numneighbors = count;
+//                                                maxDist = nToghost;
+//                                                ans = n;
+//                                            } else if (count == numneighbors) {
+//                                                if (nToghost > maxDist) {
+//                                                    maxDist = nToghost;
+//                                                    ans = n;
+//                                                } else if (nToghost == maxDist  &&  (map.getPixel(n) == pink || map.getPixel(n) == green)) {
+//                                                    ans = n;
+//                                                }
+//                                            }
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                        }
+//
+//                    if (ans == null) {
+//                        return randomDir();
+//                    }
+//                System.out.println("run from ghost");
+//                System.out.println("pacman:" + pos.toString() + "closest ghost:" + closestghosts.getPixel(pos) );
+//                    return nextmove(newmap, ans, pos);
+//                }
 
-                int maxDist = -1;
-                for (Pixel2D n : neighbors) {
-                        if (map.isInside(n) && newmap.getPixel(n) != blue && closestghosts.getPixel(n) != 0 && !isInCage(n)) {
-                            int count = howManyneighbors(map, n, map.isCyclic());
-                            if (count > 1) {
-                                int nToghost = closestghosts.getPixel(n);
-                                if (nToghost > 0) {
-                                    if (nToghost > maxDist) {
-                                        maxDist = nToghost;
-                                        ans = n;
-                                    }
-                                    if (nToghost == maxDist && (map.getPixel(n) == pink || map.getPixel(n) == green)) {
-                                        ans = n;
-                                    }
-                                }
+    public static int runaway(Map2D map, Map closestghosts , GhostCL[] ghosts , Pixel2D pos) {
+        int blue = Game.getIntColor(Color.BLUE, 0);
+        int pink = Game.getIntColor(Color.PINK, 0);
+        int green = Game.getIntColor(Color.GREEN, 0);
+        int x = pos.getX();
+        int y = pos.getY();
+        Map2D newmap = new Map(map.getMap());
+        newmap = markghost(newmap , ghosts);
+        Map2D safeDistMap = newmap.allDistance(pos, blue);
+        Pixel2D[] neighbors = getNeighbors(pos , map);
+      //  Pixel2D ans = null;
+        Pixel2D closesTogreenToP = closesetGreen(map ,safeDistMap);
+        if (closesTogreenToP != null ) {
+            Pixel2D[] path = newmap.shortestPath(pos, closesTogreenToP, blue);
+            if (path != null && path.length > 1) {
+                Pixel2D pathToGreen = path[1];
+                if (closestghosts.getPixel(pathToGreen) > 3) {
+                    System.out.println("run from ghost to green");
+                    System.out.println("pacman:" + pos.toString() + "closest green:" + closestghosts.getPixel(closesTogreenToP));
+                    return nextmove(newmap, closesTogreenToP, pos);
+                }
+            }
+        }
+        Pixel2D bestMove = null;
+        double maxScore = -1000;
+        for (Pixel2D n : neighbors) {
+            if (map.isInside(n) && newmap.getPixel(n) != blue && !isInCage(n)) {
+                int nToghost = closestghosts.getPixel(n);
+                int count = howManyneighbors(map, n, map.isCyclic());
+                double currentScore = nToghost;
+                if (count <= 1) {
+                    currentScore -= 50;
+                }
+                if (nToghost < 2) {
+                    currentScore -= 100;
+                }
+                if (count == 2 && nToghost < 5) {
+                    currentScore -= 20;
+                }
+                else if (count >= 3 ) {
+                    currentScore += 0.5;
+                }
+                if (count >= 2 &&  (map.getPixel(n) == pink || map.getPixel(n) == green)) {
+                    currentScore += 0.1;
+                }
+                if (currentScore > maxScore) {
+                    maxScore = currentScore;
+                    bestMove = n;
+
                             }
                         }
                     }
-                    if (ans == null) {
-                        return randomDir();
-                    }
-                System.out.println("run from ghost");
-                System.out.println("pacman:" + pos.toString() + "closest ghost:" + closestghosts.getPixel(pos) );
-                    return nextmove(newmap, ans, pos);
-                }
+                if (bestMove == null) {
+                    System.out.println("run from ghost by random");
 
-//
-//    public static int runaway(Map2D map, Map closestghosts , GhostCL[] ghosts , Pixel2D pos) {
-//
-//        int blue = Game.getIntColor(Color.BLUE, 0);
-//
-//        int pink = Game.getIntColor(Color.PINK, 0);
-//
-//        int green = Game.getIntColor(Color.GREEN, 0);
-//
-//        int x = pos.getX();
-//
-//        int y = pos.getY();
-//
-//        Map2D newmap = new Map(map.getMap());
-//
-//        for (GhostCL g : ghosts){
-//
-//            String currentLocation = g.getPos(0).toString();
-//
-//            Pixel2D ghost = getghostPixel(currentLocation);
-//
-//            newmap.setPixel(ghost , blue);
-//
-//        }
-//
-//        Pixel2D neighbor1, neighbor2, neighbor3, neighbor4;
-//
-//        if (map.isCyclic()) {
-//
-//            neighbor1 = new Index2D((x + 1) % map.getWidth(), y);
-//
-//            neighbor2 = new Index2D((x - 1 + map.getWidth()) % map.getWidth(), y);
-//
-//            neighbor3 = new Index2D(x, (y + 1) % map.getHeight());
-//
-//            neighbor4 = new Index2D(x, (y - 1 + map.getHeight()) % map.getHeight());
-//
-//        } else {
-//
-//            neighbor1 = new Index2D(x + 1, y);
-//
-//            neighbor2 = new Index2D(x - 1, y);
-//
-//            neighbor3 = new Index2D(x, y + 1);
-//
-//            neighbor4 = new Index2D(x, y - 1);
-//
-//        }
-//
-//        Pixel2D[] neighbors = {neighbor1, neighbor2, neighbor3, neighbor4};
-//
-//        Pixel2D ans = null;
-//
-//        Pixel2D closesTogreenToN = closesetGreen(newmap , newmap.allDistance(pos , blue)); //***//
-//
-//        if (closesTogreenToN != null ) {
-//
-//            int count = howManyneighbors(closestghosts , closesTogreenToN, map.isCyclic());
-//
-//            Pixel2D pathToGreen = newmap.shortestPath(pos, closesTogreenToN, 1)[1];
-//
-//            if (closestghosts.getPixel(pathToGreen) > 3 && count != 1) {
-//
-//                return nextmove(newmap, closesTogreenToN, pos);
-//
-//            }
-//
-//        }
-//
-//        Pixel2D closesTopinkToN = closesetPink(newmap ,newmap.allDistance(pos , blue));
-//
-//        if (closesTopinkToN != null ) {
-//
-//            int count = howManyneighbors(closestghosts ,closesTopinkToN, map.isCyclic());
-//
-//            Pixel2D pathToPink = newmap.shortestPath(pos, closesTopinkToN, 1)[1];
-//
-//            if (closestghosts.getPixel(pathToPink) > 5 && count != 1) {
-//
-//                return nextmove(newmap, pathToPink, pos);
-//
-//            }
-//
-//        }
-//
-//        int maxDist = -10;
-//
-//        for (Pixel2D n : neighbors) {
-//
-//            int count = howManyneighbors(map, n, map.isCyclic());
-//
-//            if (map.isInside(n) && map.getPixel(n) != blue && !isInCage(n) && count != 1 ) {
-//
-//                int nToghost = closestghosts.getPixel(n);
-//
-//                if (nToghost > 0) {
-//
-//                    if (nToghost > maxDist) {
-//
-//                        maxDist = nToghost;
-//
-//                        ans = n;
-//
-//                    }
-//
-//                    if (nToghost == maxDist && (map.getPixel(n) == pink || map.getPixel(n) == green)) {
-//
-//                        ans = n;
-//
-//                    }
-//
-//                }
-//
-//            }
-//
-//        }
-//
-//        if (ans == null) {
-//
-//            return randomDir();
-//
-//        }
-//
-//        return nextmove(newmap, ans, pos);
-//
-//    }
+                    return randomDir();
+        }
+        System.out.println("Running! Best Score: " + maxScore + " Target: " + bestMove);
+        return nextmove(newmap, bestMove, pos);
+    }
 
     public static Pixel2D isEatable(Map2D Distmap , GhostCL[] ghosts) {
         Pixel2D ans = null;
         int blue = Game.getIntColor(Color.BLUE, 0);
-        int dis = 8 ;
+        int dis = 10 ;
         for (int i = 0; i < ghosts.length; i++) {
             GhostCL current = ghosts[i];
-            if (current.getStatus() != 0 && current.remainTimeAsEatable(0) > 0){
+            if (current.getStatus() != 0 ){
                 String currentLocation = current.getPos(0).toString();
                 Pixel2D currenP = getghostPixel(currentLocation);
                 int distToPac = Distmap.getPixel(currenP);
-                if (!isInCage(currenP) && distToPac != -1) {
-                    double timeToReach = ((distToPac + 3) * GameInfo.DT) / 1000.0 ;
-                    if (distToPac < dis && timeToReach < current.remainTimeAsEatable(0)){
+                if (!isInCage(currenP) && !nearCage(currenP) && distToPac != -1) {
+                    double timeToReach = ((distToPac + 1) * GameInfo.DT) / 1000.0 ;
+                    boolean safeTime =(timeToReach * 1.2 < current.remainTimeAsEatable(0));
+                    if (distToPac < dis && safeTime){
                         dis  = distToPac;
                         ans = currenP;
                     }
@@ -478,7 +448,6 @@ public class Ex3Algo implements PacManAlgo {
         Pixel2D ghost = new Index2D(x, y);
         return ghost;
     }
-
     public static int howManyneighbors(Map2D map , Pixel2D n , boolean isCyclic) {
         Pixel2D neighbor1 , neighbor2 , neighbor3 , neighbor4 ;
         int counter = 0;
@@ -505,11 +474,19 @@ public class Ex3Algo implements PacManAlgo {
         }
         return counter;
     }
-
     public static boolean aliveghost( GhostCL[] ghosts ) {
         for (int i = 0; i < ghosts.length; i++) {
             GhostCL current = ghosts[i];
             if (current.getStatus() != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+    public static boolean alive_noteatable( GhostCL[] ghosts ) {
+        for (int i = 0; i < ghosts.length; i++) {
+            GhostCL current = ghosts[i];
+            if (current.getStatus() != 0 && current.remainTimeAsEatable(0) < 0.5) {
                 return true;
             }
         }
@@ -520,7 +497,11 @@ public class Ex3Algo implements PacManAlgo {
         int y = p.getY();
         return (x >= 9 && x <= 13 && y >= 11 && y <= 12);
     }
-
+    private static boolean nearCage(Pixel2D p) {
+        int x = p.getX();
+        int y = p.getY();
+        return (x >= 9 && x <= 13 && y >= 13 && y <= 14);
+    }
     public static Map2D markghost(Map2D mymap ,GhostCL[] ghosts ) {
         int blue = Game.getIntColor(Color.BLUE, 0);
         for (int i = 0; i < ghosts.length; i++) {
@@ -533,4 +514,29 @@ public class Ex3Algo implements PacManAlgo {
         return mymap;
     }
 
+    public static int whenrun(){
+       if (GameInfo.DT  <= 50){return 8;}
+       if (GameInfo.DT  <= 100){return 10;}
+       if (GameInfo.DT  <= 150){return 13;}
+       if (GameInfo.DT  <= 200){return 15;}
+       return 10;
+    }
+
+    private static Pixel2D[] getNeighbors(Pixel2D pos, Map2D map) {
+        int x = pos.getX();
+        int y = pos.getY();
+        Pixel2D neighbor1, neighbor2, neighbor3, neighbor4;
+        if (map.isCyclic()) {
+            neighbor1 = new Index2D((x + 1) % map.getWidth(), y);
+            neighbor2 = new Index2D((x - 1 + map.getWidth()) % map.getWidth(), y);
+            neighbor3 = new Index2D(x, (y + 1) % map.getHeight());
+            neighbor4 = new Index2D(x, (y - 1 + map.getHeight()) % map.getHeight());
+        } else {
+            neighbor1 = new Index2D(x + 1, y);
+            neighbor2 = new Index2D(x - 1, y);
+            neighbor3 = new Index2D(x, y + 1);
+            neighbor4 = new Index2D(x, y - 1);
+        }
+        return new Pixel2D[]{neighbor1, neighbor2, neighbor3, neighbor4};
+    }
 }
