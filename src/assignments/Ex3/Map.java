@@ -76,7 +76,11 @@ public class Map implements Map2D {
         }
         return ans;
 	}
-	@Override
+    public Map() {
+        this(10,10,0);
+    }
+
+    @Override
 	public int getWidth() {return _map.length;}
 
 	@Override
@@ -298,6 +302,56 @@ public class Map implements Map2D {
         return ans;
     }
 
+    @Override
+    public boolean equals(Object ob) {
+        if (ob == null) {
+            return false;
+        }
+        if (ob.getClass() != this.getClass()) {
+            return false;
+        }
+        if (!this.sameDimensions((Map)ob)) {
+            return false;
+        }
+        for (int i = 0; i < this.getWidth(); i++) {
+            for (int j = 0; j < this.getHeight(); j++) {
+                if (this.getPixel(i, j) != ((Map) ob).getPixel(i, j)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+
+
+    public void printMap() {
+        for (int y = 0; y < this.getHeight(); y++) {
+            for (int x = 0; x < this.getWidth(); x++) {
+                System.out.print(this.getPixel(x, y) + "\t");
+            }
+            System.out.println();
+        }
+    }
+    public void drawRect(Pixel2D p1, Pixel2D p2, int color) {
+        if (p1 == null || p2 == null) {
+            throw new RuntimeException();
+        }
+        if (!isInside(p1) || !isInside(p2)) {
+            throw new RuntimeException();
+        }
+        int Minx = Math.min(p1.getX(), p2.getX());
+        int Miny = Math.min(p1.getY(), p2.getY());
+        int Maxx = Math.max(p1.getX(), p2.getX());
+        int Maxy = Math.max(p1.getY(), p2.getY());
+        if (p1.getX() == p2.getX() && p1.getY() == p2.getY()) {
+            setPixel(p1, color);
+        } else for (int i = Minx; i <= Maxx; i++) {
+            for (int j = Miny; j <= Maxy; j++) {
+                setPixel(i, j, color);
+            }
+        }
+    }
 
     public boolean sameDimensions(Map2D p) {
         if (p == null) {
@@ -308,6 +362,7 @@ public class Map implements Map2D {
         }
         return true;
     }
+
     public void addMap2D(Map2D p) {
         if (p == null) {
             throw new RuntimeException();
@@ -319,16 +374,6 @@ public class Map implements Map2D {
             for (int j = 0; j < _map[0].length; j++) {
                 this._map[i][j] += p.getPixel(i, j);
             }
-        }
-    }
-
-
-    public void printMap() {
-        for (int y = 0; y < this.getHeight(); y++) {
-            for (int x = 0; x < this.getWidth(); x++) {
-                System.out.print(this.getPixel(x, y) + "\t");
-            }
-            System.out.println();
         }
     }
 	}
